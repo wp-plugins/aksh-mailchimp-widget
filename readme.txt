@@ -3,8 +3,8 @@ Contributors: manish2384
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=manish2384%40gmail%2ecom&lc=IN&item_name=Aksh%20Mailchimp%20Widget&amount=10%2e00&currency_code=USD&button_subtype=services&bn=PP%2dBuyNowBF%3abtn_buynowCC_LG%2egif%3aNonHosted
 Tags: widgets, mailchimp, mailchimp widget, easy maiclchimp widget
 Requires at least: 3.0.1
-Tested up to: 4.1.1
-Stable tag: 1.0
+Tested up to: 4.2.2
+Stable tag: 4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 

@@ -2,7 +2,7 @@
 /*
 Plugin Name: Aksh Mailchimp Widget
 Description: Aksh Mailchimp widget for wordpress to let your users sign up for MailChimp list. You can use it in your any widget area defined in your theme. 
-Version: 1.0
+Version: 4.0
 Author: Manish H. Gajjar
 Author URI: #
 License: GPLv2 or later
