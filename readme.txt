@@ -4,7 +4,6 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=manish23
 Tags: widgets, mailchimp, mailchimp widget, easy maiclchimp widget
 Requires at least: 3.0.1
 Tested up to: 4.2.2
-Stable tag: 4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +14,8 @@ Aksh Mailchimp widget for wordpress to let your users sign up for MailChimp list
 Aksh Mailchimp widget for wordpress to let your users sign up for MailChimp list. Add your MailChimp API key and List ID in Settings -> Aksh MailChimp thats it. You can also set whether to display NAME field or not, option to display form field name as lable or placeholder, option to enable sending confirmation email (MailChimp Double Opt-in) before register or not etc settings are there.
 
 Aksh Mailchimp widget very easy to handle in widgets. You can also add HTML texts before and/or after your mailchimp sign up form from widget. All sign up form elements are css class name ready to easy style with your theme stylesheet.
+
+In latest version now the form uses AJAX posting to submit form data to MailChimp.
 
 == Installation ==
 

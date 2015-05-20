@@ -5,106 +5,9 @@ class akshMailchimpWidget extends WP_Widget {
 		parent::__construct(false, 'Aksh Mailchimp Signup', $widget_ops);
 	}
 	function widget($args, $instance) {
-		$error = '';
-		if (isset( $_POST['_amcw_form_nonce'] ) && wp_verify_nonce( $_POST['_amcw_form_nonce'], '_amcw_form_nonce' ) ) {
-			if ( isset( $_POST['amcw_robocop'] ) && empty( $_POST['amcw_robocop'] ) ) {
-				$data = array();
-				// Ignore those fields, we don't need them
-				$ignored_fields = array( 'CPTCH_NUMBER', 'CNTCTFRM_CONTACT_ACTION', 'CPTCH_RESULT', 'CPTCH_TIME' );
-				foreach( $_POST as $key => $value ) {
-					// Sanitize key
-					$key = trim( strtoupper( $key ) );
-					// Skip field if it starts with _ or if it's in ignored_fields array
-					if( $key[0] === '_' || in_array( strtoupper( $key ), $ignored_fields ) ) {
-						continue;
-					}
-					// Sanitize value
-					$value = ( is_scalar( $value ) ) ? trim( $value ) : $value;
-					// Add value to array
-					$data[ $key ] = $value;
-				}
-				// strip slashes on everything
-				$data = stripslashes_deep( $data );
-				if( ! isset( $data['EMAIL'] ) || ! is_email( $data['EMAIL'] ) ) {
-					$error = '<span class="error">'.__('Please provide a valid email address.').'</span>';
-				}
-				else{
-					$name = $data['FNAME'];
-					$strpos = strpos( $name, ' ' );
-
-					if ( $strpos ) {
-						$merge_vars['FNAME'] = substr( $name, 0, $strpos );
-						$merge_vars['LNAME'] = substr( $name, $strpos );
-					} else {
-						$merge_vars['FNAME'] = $data['FNAME'];
-						$merge_vars['LNAME'] = '';
-					}
-					
-					$email = $data['EMAIL'];
-					$opts = amcw_get_options( 'general' );
-					
-					$api_url = 'https://api.mailchimp.com/2.0/';
-					$api_key=$opts['api_key'];
-					$list_id=$opts['list_id'];
-					if($opts['amcw_double_opt_in']){
-						$double_opt_in=true;
-					}
-					else{
-						$double_opt_in=false;
-					}
-					$email_type='html';
-					$method='lists/subscribe';
-					
-					if( strpos( $api_key, '-' ) !== false ) {
-						$api_url = 'https://' . substr( $api_key, -3 ) . '.api.mailchimp.com/2.0/';
-					}
-					$data = array(
-						'apikey' => $api_key,
-						'id' => $list_id,
-						'email' => array( 'email' => $email),
-						'merge_vars' => $merge_vars,
-						'email_type' => $email_type,
-						'double_optin' => $double_opt_in,
-						'update_existing' => false,
-						'replace_interests' =>true,
-						'send_welcome' => false
-					);
-					
-					$url = $api_url . $method . '.json';
-					
-					$response = wp_remote_post( $url, array( 
-						'body' => $data,
-						'timeout' => 15,
-						'headers' => array('Accept-Encoding' => ''),
-						'sslverify' => false
-						) 
-					);
-					
-					if( is_wp_error( $response ) ) {
-						// show error message to admins
-						$error = '<span class="error">HTTP Error: ' . $response->get_error_message().'</span>';
-					}
-					else{
-						$body = wp_remote_retrieve_body( $response );
-						$result = json_decode( $body );
-						if( is_object( $result ) ) {
-							if(isset( $result->error ) ) {
-								if( (int) $result->code === 214 ) {
-									$error = '<span class="error">'.__('Given email address is already subscribed, thank you!').'</span>';
-								} 
-								// store error message
-								$error = '<span class="error">'.$result->error.'</span>';
-							} else {
-								$error = '<span class="success">'.__('Thank you, your sign-up request was successful! Please check your e-mail inbox.').'</span>';
-							}
-						}
-					}
-				}
-			}
-			else{
-				$error = '<span class="error">'.__('Oops. Something went wrong. Please try again later.').'</span>';
-			}
-		}
+		wp_enqueue_script( 'aksh-mailchimp-widget-form', AKSH_PLUGIN_URL.'js/aksh-mailchimp-widgetform.js', array(), '20150405', true );
+		wp_localize_script( 'aksh-mailchimp-widget-form', 'AkshMailchimpWidgetForm', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ),'amcwFormNonce'=>wp_create_nonce( 'amcw_form_nonce' )));
+		
 		/* Provide some defaults */
 		$defaults = array( 'title' => '', 'text_before_form' => '', 'text_after_form' => '');
 		$instance = wp_parse_args( (array) $instance, $defaults );	
@@ -124,10 +27,8 @@ class akshMailchimpWidget extends WP_Widget {
 				?></div><?php
 			}
 			
-			echo '<div class="amcw_formwrap"><form class="amcw_form" id="amcw-form" action="" method="post">';
-			
-			if($error!=""){echo $error;}
-			
+			echo '<div class="amcw_formwrap"><form class="amcw_form" id="amcw-form" action="'.admin_url( 'admin-ajax.php' ).'" method="post">';
+			echo '<div id="statusmsg"></div>';
 			if($opts['form_ishidenamefield']!=true){/**Sign Up form with name field**/
 				/**Set default labels if not set from admin**/
 				if($opts['aksh_form_labelname']!=""){
@@ -190,8 +91,8 @@ class akshMailchimpWidget extends WP_Widget {
 				}
 			}
 			
-			echo '<textarea name="amcw_robocop" style="display: none;"></textarea>';
-			echo '<input type="hidden" name="_amcw_form_nonce" value="'.wp_create_nonce( '_amcw_form_nonce' ).'" />';
+			echo '<textarea name="amcw_robocop" id="amcw_robocop" style="display: none;"></textarea>';
+			//echo '<input type="hidden" name="_amcw_form_nonce" id="_amcw_form_nonce" value="'.wp_create_nonce( '_amcw_form_nonce' ).'" />';
 			echo '</form></div>';
 			
 			if(!empty($text_after_form)) {
@@ -246,6 +147,118 @@ class akshMailchimpWidget extends WP_Widget {
         </p>
 		<?php 
 	}
+}
+add_action( 'wp_ajax_nopriv_aksh-mailchimp-widget-submit', 'aksh_mailchimp_widget_submit');
+add_action( 'wp_ajax_aksh-mailchimp-widget-submit','aksh_mailchimp_widget_submit');
+function aksh_mailchimp_widget_submit(){
+	$error = '';
+	$amcwFormNonce=$_POST['amcwFormNonce'];
+	if ( ! wp_verify_nonce( $amcwFormNonce, 'amcw_form_nonce' ))
+		die ( 'Busted!');
+	if ( isset( $_POST['amcw_robocop'] ) && empty( $_POST['amcw_robocop'] ) ) {
+		$data = array();
+		// Ignore those fields, we don't need them
+		$ignored_fields = array( 'CPTCH_NUMBER', 'CNTCTFRM_CONTACT_ACTION', 'CPTCH_RESULT', 'CPTCH_TIME' );
+		foreach( $_POST as $key => $value ) {
+			// Sanitize key
+			$key = trim( strtoupper( $key ) );
+			// Skip field if it starts with _ or if it's in ignored_fields array
+			if( $key[0] === '_' || in_array( strtoupper( $key ), $ignored_fields ) ) {
+				continue;
+			}
+			// Sanitize value
+			$value = ( is_scalar( $value ) ) ? trim( $value ) : $value;
+			// Add value to array
+			$data[ $key ] = $value;
+		}
+		// strip slashes on everything
+		$data = stripslashes_deep( $data );
+		if( ! isset( $data['EMAIL'] ) || ! is_email( $data['EMAIL'] ) ) {
+			$error = '<span class="error">'.__('Please provide a valid email address.').'</span>';
+		}
+		else{
+			$name = $data['FNAME'];
+			$strpos = strpos( $name, ' ' );
+
+			if ( $strpos ) {
+				$merge_vars['FNAME'] = substr( $name, 0, $strpos );
+				$merge_vars['LNAME'] = substr( $name, $strpos );
+			} else {
+				$merge_vars['FNAME'] = $data['FNAME'];
+				$merge_vars['LNAME'] = '';
+			}
+			
+			$email = $data['EMAIL'];
+			$opts = amcw_get_options( 'general' );
+			
+			$api_url = 'https://api.mailchimp.com/2.0/';
+			$api_key=$opts['api_key'];
+			$list_id=$opts['list_id'];
+			if($opts['amcw_double_opt_in']){
+				$double_opt_in=true;
+			}
+			else{
+				$double_opt_in=false;
+			}
+			$email_type='html';
+			$method='lists/subscribe';
+			
+			if( strpos( $api_key, '-' ) !== false ) {
+				$api_url = 'https://' . substr( $api_key, -3 ) . '.api.mailchimp.com/2.0/';
+			}
+			$data = array(
+				'apikey' => $api_key,
+				'id' => $list_id,
+				'email' => array( 'email' => $email),
+				'merge_vars' => $merge_vars,
+				'email_type' => $email_type,
+				'double_optin' => $double_opt_in,
+				'update_existing' => false,
+				'replace_interests' =>true,
+				'send_welcome' => false
+			);
+			
+			$url = $api_url . $method . '.json';
+			
+			$response = wp_remote_post( $url, array( 
+				'body' => $data,
+				'timeout' => 15,
+				'headers' => array('Accept-Encoding' => ''),
+				'sslverify' => false
+				) 
+			);
+			
+			if( is_wp_error( $response ) ) {
+				// show error message to admins
+				$error = '<span class="error">HTTP Error: ' . $response->get_error_message().'</span>';
+			}
+			else{
+				$body = wp_remote_retrieve_body( $response );
+				$result = json_decode( $body );
+				if( is_object( $result ) ) {
+					if(isset( $result->error ) ) {
+						if( (int) $result->code === 214 ) {
+							$error = '<span class="error">'.__('Given email address is already subscribed, thank you!').'</span>';
+						} 
+						// store error message
+						$error = '<span class="error">'.$result->error.'</span>';
+						$response = json_encode( array( 'fail' => true, 'message'=>$error, 'amcwFormNonce'=>$amcwFormNonce) );
+					} else {
+						$error = '<span class="success">'.__('Thank you, your sign-up request was successful! Please check your e-mail inbox.').'</span>';
+						$response = json_encode( array( 'success' => true, 'message'=>$error, 'amcwFormNonce'=>$amcwFormNonce) );
+					}
+				}
+			}
+		}
+	}
+	else{
+		$error = '<span class="error">'.__('Oops. Something went wrong. Please try again later.').'</span>';
+		$response = json_encode( array( 'fail' => true, 'message'=>$error,'amcwFormNonce'=>$amcwFormNonce) );
+	}
+	header( "Content-Type: application/json" );
+	echo $response;
+	// IMPORTANT: don't forget to "exit"
+	exit;
 }
 function amcw_widget_init() {
 	register_widget('akshMailchimpWidget');
